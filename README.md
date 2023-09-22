@@ -1,2 +1,3 @@
 # cmsc673
-Projct for CMSC473/673
+
+CMSC673 Project on user-friendly database querying
