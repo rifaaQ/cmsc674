@@ -1,6 +1,7 @@
 """
 Some utility functions for text processing.
 """
+import random
 
 def split_text(text, chunk_size, overlap):
     """
@@ -17,4 +18,19 @@ def split_text(text, chunk_size, overlap):
         chunks.append(chunk)
     
     return chunks
+
+def get_random_query(text, size, n_samples):
+    """
+    Given some text, generate a number of random substring of given size.
+    """
+    words = text.split()
+
+    if size > len(words):
+        raise ValueError("Query size is too large.")
+
+    # generate random indicies of text to look at
+    rand_idx = random.sample(range(len(words)-size+1), n_samples)
+    queries =  [' '.join(words[i:i+size]) for i in rand_idx]
+
+    return queries
 
