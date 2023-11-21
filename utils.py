@@ -42,3 +42,8 @@ def get_random_query(text, min_len, max_len, n_samples):
 
     return queries
 
+def explode_list(some_list):
+    """
+    Explode a list of lists to one list.
+    """
+    return [x for sublist in some_list for x in sublist]
