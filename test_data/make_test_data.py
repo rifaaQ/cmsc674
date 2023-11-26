@@ -12,8 +12,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Testing Data Generation')
 parser.add_argument('--data-file', type=str, default="wiki_hard.pkl",
                     help='input file for pkl dataframe (default: wiki_hard.pkl')
-parser.add_argument('--out-file', type=str, default="wiki_hard_test.pkl",
-                    help='output file for data (default: wiki_hard_pkl.txt)')
+parser.add_argument('--out-file', type=str, default="wiki_hard_test",
+                    help='output file for data (default: wiki_hard_test)')
 parser.add_argument('--min-qsize', type=int, default=50,
                     help='Minimum query size (default: 50)')
 parser.add_argument('--max-qsize', type=int, default=100,
@@ -38,7 +38,8 @@ def main():
     df = df.explode('text', ignore_index=True)
 
     # save df
-    df.to_pickle(args.out_file)
+    out_file_name = f"{args.out_file}_{min_qlen}-{max_qlen}.pkl"
+    df.to_pickle(out_file_name)
    
 if __name__ == '__main__':
     SEED = 47
