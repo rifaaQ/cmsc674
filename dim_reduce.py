@@ -113,7 +113,7 @@ def dim_reduce(dimensions, params, data_path, emb_path):
             # space = embs_reduced.size / (embs_reduced.shape[0]*max_dval)
 
             # add data point
-            data_pts.append((P['model_name'], P['chunk_size'], P['overlap'], dim, acc, P['query_size'], space))
+            data_pts.append((P['model_name'], P['chunk_size'], P['overlap'], dim, acc, P['query_size']))
         print()
 
     return data_pts 
