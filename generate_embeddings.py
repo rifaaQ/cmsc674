@@ -1,7 +1,5 @@
 """
 This file generates vector embeddings for a dataset of documents words.
----
-I have no idea if this works, I'm running the actual one on collab bc I don't have a GPU.
 """
 import torch
 import pandas as pd
@@ -13,14 +11,15 @@ from utils import *
 from transformers import AutoTokenizer, AutoModel
 from tqdm import tqdm
 
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 parser = argparse.ArgumentParser(description='Generate Vector Embeddings')
-parser.add_argument('--data-file', type=str, default="./test_data/wiki_hard.pkl",
-                    help='input file for pkl dataframe (default: wiki_hard.pkl')
+parser.add_argument('--data-path', type=str, default="./test_data",
+                    help='path where data is stored (default: ./test_data')
 parser.add_argument('--model-name', type=str, default='facebook/contriever',
                     help='embedding model name (default: contriever)')
 parser.add_argument('--save-dir', type=str, default='./emb_examples',
-                    help='embedding save directory')
+                    help='path where embeddings are saved')
 
 def mean_pooling(token_embeddings, mask):
     """
@@ -30,7 +29,7 @@ def mean_pooling(token_embeddings, mask):
     sentence_embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
     return sentence_embeddings
 
-def embedd(text, tokenizer, model, device):
+def embedd(text, tokenizer, model):
     """
     Create vector embeddings for some text.
     """
@@ -40,49 +39,97 @@ def embedd(text, tokenizer, model, device):
 
     return embeddings.cpu().detach().numpy()
 
+def generate_query_embs(query_ranges, model, tokenizer, model_name, data_path, emb_path):
+    """
+    Generate embeddings for the queries.
+    """
+    for query_size in query_ranges:
+        # check existence
+        emb_name = f"{emb_path}_test-{query_size[0]}-{query_size[1]}_emb.npy"
+        emb_file = f"{emb_path}/{emb_name}"
+        if os.path.isfile(emb_file):
+            print(f"{emb_name} already exists")
+            continue
+
+        # get text
+        df = pd.read_pickle(f"{data_path}/wiki_hard_test_{query_size[0]}-{query_size[1]}.pkl")
+        test_text = list(df['text'])
+
+        # embedd text
+        test_emb = embedd([test_text[0]])
+        for txt in tqdm(test_text[1:]):
+            emb = embedd([txt])
+            test_emb = np.concatenate((test_emb, emb), axis=0)
+
+        # save
+        np.save(emb_file, test_emb)
+        print(f"saved: {emb_name} {test_emb.shape}\n")
+
+def generate_doc_embs(chunk_sizes, overlaps, model, tokenizer, model_name, data_path, emb_path):
+    """
+    Generate embeddings for the documents.
+    """
+    # prepare documents
+    df = pd.read_pickle(f"{data_path}/wiki_hard.pkl")
+    all_text = list(df['text'])
+
+    # start embeddings
+    iter = 1
+    total_iter = len(chunk_sizes)*len(overlaps)
+
+    for chunk in chunk_sizes:
+        for overlap in overlaps:
+            # emb names
+            ovlp_val = int(chunk*overlap)
+            emb_name = f"{model_name}_chnk-{chunk}_ovlp-{ovlp_val}_emb"
+            emb_file = f"{emb_path}/{emb_name}.npy"
+
+            print(f"[{iter}/{total_iter}]: {model_name} chnk={chunk} ovlp={ovlp_val}")
+            iter += 1
+
+            # skip if embeddings already exists
+            if os.path.isfile(emb_file):
+                print(f"embedding exists \n")
+                continue
+
+            # get text
+            splits = [split_text(x, chunk, ovlp_val) for x in all_text]
+            all_text_splits = explode_list(splits)
+
+            # generate embeddings
+            embeddings = embedd([all_text_splits[0]])
+
+            for txt in tqdm(all_text_splits[1:]):
+                emb = embedd([txt])
+                embeddings = np.concatenate((embeddings, emb), axis=0)
+
+            # save embeddings
+            print(embeddings.shape)
+            np.save(emb_file, embeddings)
+            print()
+
 def main():
     global args
     args = parser.parse_args()
-    df = pd.read_pickle(args.data_file)
 
     model_name = args.model_name
-    save_dir = args.save_dir
+    data_path = args.data_path
+    emb_path = args.save_dir
 
     chunk_sizes = [100 + 50*x for x in range(9)]
-    overlaps = [.05, .1, .15, .2, .25, .3, .4, .5]
+    overlaps = [0, .05, .1, .15, .2, .25, .3, .4, .5]
+    query_ranges = [(25,50),(50,100)]
 
+    # load model
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name)
-    # use GPU to generate embeddings, CPU is too slow
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
 
-    all_text = list(df['text'])
+    # queries
+    generate_query_embs(query_ranges, model, tokenizer, model_name, data_path, emb_path)
 
-    for chunk_size in chunk_sizes:
-        for overlap in overlaps:
-            overlap_val = int(chunk_size*overlap)
-            emb_name = f"{model_name}_chnk-{chunk_size}_ovlp-{overlap_val}_emb"
-
-            # check if embedding already exists
-            if os.path.exists(save_dir + '/' + emb_name):
-                continue
-
-            # split text and get all text from data
-            splits = [split_text(x, chunk_size, overlap_val) for x in all_text]
-            all_text_splits = explode_list(splits)
-
-            # embedd text
-            # I have a RAM issue so we gotta do this one by one
-            embeddings = embedd(all_text_splits[0])
-
-            for txt in tqdm(all_text[1:]):
-                emb = embedd(txt)
-                embeddings = np.concatenate((embeddings, emb), axis=0)
-            
-            # save embeddings
-            np_save_file = save_dir + '/' + emb_name + '.npy'
-            np.save(np_save_file, embeddings)
-
+    # documents 
+    generate_doc_embs(chunk_sizes, overlaps, model, tokenizer, model_name, data_path, emb_path)
+    
 if __name__ == '__main__':
     main()
