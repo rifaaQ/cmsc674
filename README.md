@@ -1,3 +1,3 @@
 # cmsc673
 
-CMSC673 Project on user-friendly database querying
+go to [this](https://github.com/rifaaQ/cmsc674/tree/hj) branch
