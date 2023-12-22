@@ -1,6 +1,6 @@
-# LLM Arrtribution
+# LLM Attribution
 
-This project contains code for testing BM25 related stuff and the best embeddigng method used for llm attribution.
+This project contains code for testing BM25-related stuff and the best embeddigng settings used for llm attribution.
 
 
 ## Demo
@@ -11,5 +11,7 @@ A demo can be found [here](https://huggingface.co/spaces/hongjos/llm-attribution
 - `embedding_examples` folder contains some examples of the embeddings of different sentence transformer models used for testing (the rest is stored elsewher).
 - `test_data` contains all the test data from Wikipedia, TreCovid, and NFCorpus.
 - `generate_embeddings` - creates the different embeddings to compare using some given model from Huggingface.
-- `dim_reduce` - tests dimensionlaity reduction using PCA on some embeddings to see how accuracy changes 
+- `dim_reduce` - tests dimensionlaity reduction using PCA on some embeddings to see how accuracy changes
+- `results` - contains the pkl files for all the different embeddings and settings experimented.
+- `analyssis`- contains all the analysis files for the results above.
 
