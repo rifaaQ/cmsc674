@@ -12,7 +12,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Testing Data Generation')
 parser.add_argument('--data-file', type=str, default="wiki_hard.pkl",
 					help='input file for pkl dataframe (default: wiki_hard.pkl')
-parser.add_argument('--out-file', type=str, default="wiki_hard_test.pkl",
+parser.add_argument('--out-file', type=str, default="./test_data/wiki_hard_test.pkl",
 					help='output file for data (default: wiki_hard_pkl.txt)')
 parser.add_argument('--query-size', type=int, default=100,
 					help='Query size (default: 100)')
